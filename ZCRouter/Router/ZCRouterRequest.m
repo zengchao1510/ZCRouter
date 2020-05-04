@@ -17,6 +17,7 @@
 @property (nonatomic, copy) NSString     *path;
 @property (nonatomic, copy) NSDictionary *additionalParams;
 @property (nonatomic, copy) NSString     *scheme;
+@property (nonatomic, copy) NSString     *domain;
 
 @end
 
@@ -41,6 +42,7 @@
         self.url = URL;
         self.scheme = URL.scheme;
         NSURLComponents *components = [NSURLComponents componentsWithString:URL.absoluteString];
+        self.domain = components.host;
         if (components.host.length > 0 && [components.host rangeOfString:@"."].location == NSNotFound) {
             // 将host设置到路径当中
             NSString *host  = components.host;
@@ -80,7 +82,11 @@
                 [queryMap setValue:@"" forKey:keyAndValue[0]];
             }
         }
-        self.qureyParams = [queryMap copy];
+        
+        if (queryMap.count > 0) {
+            
+            self.qureyParams = [queryMap copy];
+        }
         self.additionalParams = params;
     }
     return self;

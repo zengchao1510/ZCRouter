@@ -11,14 +11,13 @@
 
 @interface  ZCRouterParse ()
 
-// url地址列表
-@property (nonatomic, strong) NSMutableArray *urlList;
-
 @property (nonatomic, copy) NSURL *url;
 
-@property (nonatomic, copy) NSString *pattern;
-@property (nonatomic, copy) NSArray *patternPathComponents;
-@property (nonatomic, strong) NSMutableDictionary *patternPathParams;
+@property (nonatomic, copy)   NSString *domain;
+@property (nonatomic, copy)   NSArray  *patternPathComponents;
+
+@property (nonatomic, strong) NSMutableDictionary *patterns;
+@property (nonatomic, strong) NSMutableDictionary *handles;
 
 @end
 
@@ -36,7 +35,6 @@
         
         self.scheme     = url.scheme;
         self.currentUrl = url;
-        [self.urlList addObject:url];
     }
     return self;
 }
@@ -56,17 +54,23 @@
 }
 
 - (instancetype)initWithScheme:(NSString *)scheme
+                        domain:(NSString *)domain
                        pattern:(NSString *)pattern
                        handler:(void (^)(NSDictionary *, void (^)(id params)))handler {
     
-    NSParameterAssert(pattern != nil);
+    NSParameterAssert(domain != nil);
     NSParameterAssert(scheme != nil);
+    NSParameterAssert(pattern != nil);
     
     if ((self = [super init])) {
         
-        self.pattern = pattern;
+        self.domain  = domain;
         self.scheme  = scheme;
-        self.handle  = handler;
+        if (handler) {
+            
+            [self addHandle:handler byPattern:pattern];
+        }
+        
         if ([pattern characterAtIndex:0] == '/') {
             
             pattern = [pattern substringFromIndex:1];
@@ -77,6 +81,7 @@
 }
 
 - (void)startRequest:(ZCRouterRequest *)request
+             pattern:(NSString *)pattern
         handlerBlock:(BOOL (^)(NSDictionary *, NSError *))handlerBlock {
     
     if (!request) {
@@ -89,45 +94,61 @@
     NSArray *paths                = [request paths];
     NSDictionary *queryMap        = [request qureyParams];
     NSDictionary *additionalMap   = [request additionalParams];
+    NSString *domain              = [request domain];
     
     NSMutableDictionary *muDic = [NSMutableDictionary dictionary];
     [muDic setValue:queryMap forKey:@"query"];
     [muDic setValue:paths forKey:@"paths"];
     [muDic setValue:additionalMap forKey:@"params"];
-    [muDic setValue:self.pattern forKey:@"pattern"];
-    [muDic setValue:self.patternPathParams.copy forKey:@"pathComponent"];
+    [muDic setValue:domain forKey:@"domain"];
+    [muDic setValue:[[self.patterns valueForKey:pattern] copy] forKey:@"pathComponent"];
     [muDic setValue:request.url.absoluteString forKey:@"url"];
     handlerBlock([muDic copy], nil);
 }
 
-- (void)addURL:(NSURL *)URL {
+- (void)setValue:(NSString *)value
+             key:(NSString *)key
+         pattern:(NSString *)pattern {
     
-    if (URL) {
+    if ([self.patterns valueForKey:pattern]) {
         
-        [self.urlList addObject:URL];
+        NSMutableDictionary *muDic = [self.patterns objectForKey:pattern];
+        [muDic setValue:value forKey:key];
+    } else {
+        
+        NSMutableDictionary *muDic = [NSMutableDictionary dictionary];
+        [muDic setValue:value forKey:key];
+        [self.patterns setValue:muDic forKey:pattern];
     }
 }
 
-- (void)removeURL:(NSURL *)URL {
+- (void)addHandle:(void (^)(NSDictionary *, void (^)(id params)))handle
+        byPattern:(NSString *)pattern {
     
-    if (URL && [self.urlList containsObject:URL]) {
-        
-        [self.urlList removeObject:URL];
-    }
+    [self.handles setObject:handle forKey:pattern];
 }
 
-- (void)setValue:(NSString *)value forPatternPathKey:(NSString *)key {
+- (void (^)(NSDictionary *, void (^)(id params)))getHandleByPattern:(NSString *)pattern {
     
-    [self.patternPathParams setValue:value forKey:key];
+    return self.handles[pattern];
 }
 
-- (NSMutableDictionary *)patternPathParams {
+- (NSMutableDictionary *)handles {
     
-    if (!_patternPathParams) {
+    if (!_handles) {
         
-        _patternPathParams = [NSMutableDictionary dictionary];
+        _handles = [NSMutableDictionary dictionary];
     }
-    return _patternPathParams;
+    return _handles;
+}
+
+- (NSMutableDictionary *)patterns {
+    
+    if (!_patterns) {
+        
+        _patterns = [NSMutableDictionary dictionary];
+    }
+    return _patterns;
 }
 
 @end

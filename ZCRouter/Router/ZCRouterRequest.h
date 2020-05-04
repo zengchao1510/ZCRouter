@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, copy, readonly) NSURL        *url;
 @property (nonatomic, copy, readonly) NSString     *scheme;
+@property (nonatomic, copy, readonly) NSString     *domain;
 @property (nonatomic, copy, readonly) NSArray      *paths;
 @property (nonatomic, copy, readonly) NSString     *path;
 @property (nonatomic, copy, readonly) NSDictionary *qureyParams;

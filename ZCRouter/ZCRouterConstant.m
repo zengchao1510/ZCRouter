@@ -11,14 +11,8 @@
 
 #pragma mark - 路由模式
 
-NSString *const ZCHTTPRouteSchema = @"http";
+NSString *const ZCHTTPRouteSchema  = @"http";
 NSString *const ZCHTTPsRouteSchema = @"https";
-NSString *const ZCComponentsCallBackHandlerRouteSchema = @"AppCallBack";
-NSString *const ZCWebHandlerRouteSchema = @"yinzhi";
-NSString *const ZCUnknownHandlerRouteSchema = @"UnKnown";
+NSString *const ModulePhotopicker  = @"com.photopicker";
 
-#pragma mark - 路由表
-NSString *const ZCNavPushRoute    = @"push:/";
-NSString *const ZCNavPresentRoute = @"";
-NSString *const ZCComponentsCallBackRoute = @"/com.liaoba/components/*";
 

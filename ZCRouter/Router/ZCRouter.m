@@ -13,23 +13,31 @@
 
 static NSMutableDictionary *GlobalRoutesMap = nil;
 static NSString            *ZCDefaultRouteSchema = @"ZCDefaultRouteSchema";
+static NSString            *ZCDefaultRouteDomain = @"com.boylove";
 
 @implementation ZCRouter
-
-// 添加路由规则
-+ (void)addRouterByPattern:(NSString *)pattern
-                   handler:(void (^)(NSDictionary *, void (^)(id params)))handler {
-    
-    [self addRouterByScheme:ZCDefaultRouteSchema pattern:pattern handler:handler];
-}
 
 + (void)addRouterByScheme:(NSString *)scheme
                   handler:(void (^)(NSDictionary *, void (^)(id params)))handler {
     
-    [self addRouterByScheme:scheme pattern:nil handler:handler];
+    [self addRouterByScheme:scheme domain:nil pattern:nil handler:handler];
+}
+
++ (void)addRouterByDomain:(NSString *)domain
+                  pattern:(NSString *)pattern
+                  handler:(void (^)(NSDictionary *, void (^)(id params)))handler {
+
+    [self addRouterByScheme:ZCDefaultRouteSchema domain:domain pattern:pattern handler:handler];
+}
+
++ (void)addRouterByPattern:(NSString *)pattern
+                   handler:(void (^)(NSDictionary *, void (^)(id params)))handler {
+
+    [self addRouterByScheme:ZCDefaultRouteSchema domain:ZCDefaultRouteDomain pattern:pattern handler:handler];
 }
 
 + (void)addRouterByScheme:(NSString *)scheme
+                   domain:(NSString *)domain
                   pattern:(NSString *)pattern
                   handler:(void (^)(NSDictionary *, void (^)(id params)))handler {
     
@@ -38,13 +46,13 @@ static NSString            *ZCDefaultRouteSchema = @"ZCDefaultRouteSchema";
         scheme = ZCDefaultRouteSchema;
     }
     
-    if (!pattern) {
+    if (!domain) {
         
         ZCRouterParse *router = [self getGlobalRoutesMap][scheme];
         if (!router) {
             
             router = [[ZCRouterParse alloc] initWithScheme:scheme handler:handler];
-            GlobalRoutesMap[scheme] = router;
+            [self getGlobalRoutesMap][scheme] = router;
         } else {
             
             router.handle = handler;
@@ -52,21 +60,28 @@ static NSString            *ZCDefaultRouteSchema = @"ZCDefaultRouteSchema";
         return;
     }
     
-    NSMutableDictionary *routers = [self getGlobalRoutesMap][scheme];
+    NSMutableDictionary *routers = GlobalRoutesMap[scheme];
     if (!routers) {
         
         routers = [NSMutableDictionary dictionary];
         GlobalRoutesMap[scheme] = routers;
     }
     
-    ZCRouterParse *router = routers[pattern];
+    ZCRouterParse *router = [routers valueForKey:domain];
     if (!router) {
         
-        router = [[ZCRouterParse alloc] initWithScheme:scheme pattern:pattern handler:handler];
-        routers[pattern] = router;
+        if (pattern) {
+        
+            router = [[ZCRouterParse alloc] initWithScheme:scheme domain:domain pattern:pattern handler:handler];
+        } else {
+            
+            router = [[ZCRouterParse alloc] initWithScheme:scheme handler:handler];
+        }
+        routers[domain] = router;
+        
     } else {
         
-        router.handle = handler;
+        [router addHandle:handler byPattern:pattern];
     }
 }
 
@@ -105,7 +120,17 @@ static NSString            *ZCDefaultRouteSchema = @"ZCDefaultRouteSchema";
                    handler:(void (^ _Nullable)(NSDictionary * _Nullable))handler {
     
     pathComponent = [pathComponent stringByURLEncode];
-    NSString *url = [NSString stringWithFormat:@"%@://%@", ZCDefaultRouteSchema, pathComponent];
+    NSString *url = [NSString stringWithFormat:@"%@://%@/%@", ZCDefaultRouteSchema, ZCDefaultRouteDomain, pathComponent];
+    [self routeURL:[NSURL URLWithString:url] params:params handler:handler];
+}
+
++ (void)routeDomain:(NSString *)domain
+      pathComponent:(NSString *)pathComponent
+             params:(NSDictionary * _Nullable)params
+            handler:(void (^ _Nullable )(NSDictionary * _Nullable))handler {
+    
+    pathComponent = [pathComponent stringByURLEncode];
+    NSString *url = [NSString stringWithFormat:@"%@://%@/%@", ZCDefaultRouteSchema, domain, pathComponent];
     [self routeURL:[NSURL URLWithString:url] params:params handler:handler];
 }
 
@@ -118,7 +143,9 @@ static NSString            *ZCDefaultRouteSchema = @"ZCDefaultRouteSchema";
     if (![routers isKindOfClass: [NSMutableDictionary class]]) {
         
         ZCRouterParse *router = routers;
-        [router startRequest:request handlerBlock:^BOOL(NSDictionary *params, NSError *error) {
+        [router startRequest:request
+                     pattern:nil
+                handlerBlock:^BOOL(NSDictionary *params, NSError *error) {
             
             if (!error) {
                 
@@ -142,7 +169,7 @@ static NSString            *ZCDefaultRouteSchema = @"ZCDefaultRouteSchema";
         pattern = [NSString stringWithFormat:@"%@%@:/", pattern, paths[i]];
     }
     
-    ZCRouterParse *router = [routers objectForKey:pattern];
+    ZCRouterParse *router = [routers valueForKey: request.domain];
     if (!router) {
         
         return;
@@ -157,16 +184,18 @@ static NSString            *ZCDefaultRouteSchema = @"ZCDefaultRouteSchema";
             
             value = nil;
         }
-        [router setValue:value forPatternPathKey:paths[i]];
+        [router setValue:value key:paths[i] pattern:pattern];
     }
     
-    [router startRequest:request handlerBlock:^BOOL(NSDictionary *params, NSError *error) {
+    [router startRequest:request
+                 pattern:pattern
+            handlerBlock:^BOOL(NSDictionary *params, NSError *error) {
         
         if (!error) {
             
-            if (router.handle) {
+            if ([router getHandleByPattern:pattern]) {
                 
-                router.handle(params, handler);
+                [router getHandleByPattern:pattern](params, handler);
             }
             return YES;
         } else {

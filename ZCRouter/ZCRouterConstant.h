@@ -10,27 +10,19 @@
 
 #pragma mark - 路由模式
 
-/**
- 模式 Native：AppSchema://url/:param
- */
-
-// 网络跳转路由模式
+// 网络路由
 FOUNDATION_EXTERN NSString *const ZCHTTPRouteSchema;
 FOUNDATION_EXTERN NSString *const ZCHTTPsRouteSchema;
-// WEB交互路由跳转模式
-FOUNDATION_EXTERN NSString *const ZCWebHandlerRouteSchema;
-// 回调通信
-FOUNDATION_EXTERN NSString *const ZCComponentsCallBackHandlerRouteSchema;
-// 未知路由
-FOUNDATION_EXTERN NSString *const ZCUnknownHandlerRouteSchema;
 
-#pragma mark - 路由表
+// 照片选择器
+FOUNDATION_EXTERN NSString *const ModulePhotopicker;
 
-// 导航栏 Push
-FOUNDATION_EXTERN NSString *const ZCNavPushRoute;
+// 定位
+#define DefaultRouterPatternLocation(reGeocode) [NSString stringWithFormat:@"location/%@",reGeocode]
+// 照片选择器
+#define ModulePhotopickerRouterPatternType(type) [NSString stringWithFormat:@"type/%@",type]
+// 页面导航
+#define DefaultRouterPatternVc(vc) [NSString stringWithFormat:@"vc/%@",vc]
+#define DefaultRouterPatternVcAndType(vc, type) [NSString stringWithFormat:@"vc/%@/type/%@",vc,type]
+#define DefaultRouterPatternVcAndTypeAnimation(vc, type, animation) [NSString stringWithFormat:@"vc/%@/type/%@/animation/%@",vc,type,animation]
 
-// 导航栏 Present
-FOUNDATION_EXTERN NSString *const ZCNavPresentRoute;
-
-// 组件通信回调
-FOUNDATION_EXTERN NSString *const FKComponentsCallBackRoute;

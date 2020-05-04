@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "ZCRouterConstant.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -16,6 +17,15 @@ NS_ASSUME_NONNULL_BEGIN
                    handler:(void (^)(NSDictionary *, void (^)(id params)))handler;
 
 + (void)addRouterByScheme:(NSString *)scheme
+                  handler:(void (^)(NSDictionary *, void (^)(id params)))handler;
+
++ (void)addRouterByDomain:(NSString *)domain
+                  pattern:(NSString *)pattern
+                  handler:(void (^)(NSDictionary *, void (^)(id params)))handler;
+
++ (void)addRouterByScheme:(NSString *)scheme
+                   domain:(NSString *)domain
+                  pattern:(NSString *)pattern
                   handler:(void (^)(NSDictionary *, void (^)(id params)))handler;
 
 + (void)routePathComponent:(NSString *)pathComponent
@@ -28,6 +38,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)routeScheme:(NSString *)scheme
       pathComponent:(NSString *)pathComponent
              params:(NSDictionary *)params;
+
++ (void)routeDomain:(NSString *)domain
+      pathComponent:(NSString *)pathComponent
+             params:(NSDictionary * _Nullable)params
+            handler:(void (^ _Nullable )(NSDictionary * _Nullable))handler;
 
 + (void)routeURL:(NSString *)URL;
 
